@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Calculator</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      display: flex; justify-content: center; align-items: center;
+      min-height: 100vh; background: #0f172a;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .calc { background: #1e293b; border-radius: 24px; padding: 24px; width: 320px; }
+    .display { background: #0f172a; border-radius: 16px; padding: 20px 20px 12px; margin-bottom: 20px; text-align: right; }
+    .display .expr { color: #64748b; font-size: 13px; min-height: 18px; margin-bottom: 6px; }
+    .display .val  { color: #f1f5f9; font-size: 36px; font-weight: 300; min-height: 44px; word-break: break-all; }
+    .buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    button {
+      border: none; border-radius: 12px; font-size: 18px; font-weight: 500;
+      height: 64px; cursor: pointer; transition: transform 0.1s;
+    }
+    button:active { transform: scale(0.93); }
+    .btn-num   { background: #334155; color: #f1f5f9; }
+    .btn-num:hover { background: #475569; }
+    .btn-op    { background: #0ea5e9; color: white; }
+    .btn-op:hover { background: #38bdf8; }
+    .btn-eq    { background: #6366f1; color: white; }
+    .btn-eq:hover { background: #818cf8; }
+    .btn-fn    { background: #1e3a5f; color: #7dd3fc; }
+    .btn-fn:hover { background: #1d4ed8; color: white; }
+    .btn-clear { background: #dc2626; color: white; }
+    .btn-clear:hover { background: #ef4444; }
+    .btn-zero  { grid-column: span 2; }
+    .error     { color: #f87171 !important; font-size: 22px !important; }
+  </style>
+</head>
+<body>
+  <div class="calc">
+    <div class="display">
+      <div class="expr" id="expr"></div>
+      <div class="val"  id="val">0</div>
+    </div>
+    <div class="buttons">
+      <button class="btn-clear" onclick="clearAll()">AC</button>
+      <button class="btn-fn"    onclick="toggleSign()">+/-</button>
+      <button class="btn-fn"    onclick="percent()">%</button>
+      <button class="btn-op"    onclick="setOp('/')">÷</button>
+
+      <button class="btn-num"   onclick="num('7')">7</button>
+      <button class="btn-num"   onclick="num('8')">8</button>
+      <button class="btn-num"   onclick="num('9')">9</button>
+      <button class="btn-op"    onclick="setOp('*')">×</button>
+
+      <button class="btn-num"   onclick="num('4')">4</button>
+      <button class="btn-num"   onclick="num('5')">5</button>
+      <button class="btn-num"   onclick="num('6')">6</button>
+      <button class="btn-op"    onclick="setOp('-')">−</button>
+
+      <button class="btn-num"   onclick="num('1')">1</button>
+      <button class="btn-num"   onclick="num('2')">2</button>
+      <button class="btn-num"   onclick="num('3')">3</button>
+      <button class="btn-op"    onclick="setOp('+')">+</button>
+
+      <button class="btn-num btn-zero" onclick="num('0')">0</button>
+      <button class="btn-num"   onclick="dot()">.</button>
+      <button class="btn-eq"    onclick="calculate()">=</button>
+    </div>
+  </div>
+
+  <script>
+    let cur = '0', prev = '', op = '', justCalc = false;
+    const valEl = document.getElementById('val');
+    const exprEl = document.getElementById('expr');
+
+    function display(v) { valEl.classList.remove('error'); valEl.textContent = v; }
+
+    function num(n) {
+      if (justCalc) { cur = n; justCalc = false; }
+      else cur = cur === '0' ? n : cur.length < 12 ? cur + n : cur;
+      display(cur);
+    }
+
+    function dot() {
+      if (justCalc) { cur = '0.'; justCalc = false; display(cur); return; }
+      if (!cur.includes('.')) { cur += '.'; display(cur); }
+    }
+
+    function setOp(o) {
+      if (op && !justCalc) calculate(true);
+      prev = cur; op = o; justCalc = true;
+      const sym = {'+':'+', '-':'−', '*':'×', '/':'÷'};
+      exprEl.textContent = prev + ' ' + sym[o];
+    }
+
+    function calculate(chain) {
+      if (!op || !prev) return;
+      const a = parseFloat(prev), b = parseFloat(cur);
+      const sym = {'+':'+', '-':'−', '*':'×', '/':'÷'};
+      let res;
+      if (op === '+') res = a + b;
+      if (op === '-') res = a - b;
+      if (op === '*') res = a * b;
+      if (op === '/') {
+        if (b === 0) {
+          valEl.classList.add('error'); valEl.textContent = 'Error';
+          exprEl.textContent = ''; cur = '0'; prev = ''; op = ''; justCalc = false; return;
+        }
+        res = a / b;
+      }
+      const resStr = parseFloat(res.toFixed(10)).toString();
+      if (!chain) exprEl.textContent = prev + ' ' + sym[op] + ' ' + cur + ' =';
+      cur = resStr; display(resStr);
+      prev = ''; op = ''; justCalc = true;
+    }
+
+    function clearAll() { cur='0'; prev=''; op=''; justCalc=false; display('0'); exprEl.textContent=''; }
+    function toggleSign() { if(cur!=='0'){ cur=cur.startsWith('-')?cur.slice(1):'-'+cur; display(cur); } }
+    function percent() { cur=(parseFloat(cur)/100).toString(); display(cur); }
+
+    document.addEventListener('keydown', e => {
+      if (e.key>='0'&&e.key<='9') num(e.key);
+      else if (e.key==='.') dot();
+      else if (e.key==='+') setOp('+');
+      else if (e.key==='-') setOp('-');
+      else if (e.key==='*') setOp('*');
+      else if (e.key==='/') { e.preventDefault(); setOp('/'); }
+      else if (e.key==='Enter'||e.key==='=') calculate();
+      else if (e.key==='Escape') clearAll();
+      else if (e.key==='Backspace') { cur=cur.length>1?cur.slice(0,-1):'0'; display(cur); }
+    });
+  </script>
+</body>
+</html>
